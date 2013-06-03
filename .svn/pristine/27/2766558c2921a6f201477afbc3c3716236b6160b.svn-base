@@ -1,0 +1,149 @@
+package org.thingswithworth.metamusic.activities.adapters;
+
+import android.graphics.Color;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.*;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.R;
+import org.thingswithworth.metamusic.activities.SongPlayActivity;
+import org.thingswithworth.metamusic.media.MusicPlayer;
+
+/**
+ * This is the adapter for the playlist/queue visible on the song playing SearchActivity.
+ * @author: Andrey Kurenkov
+ */
+public class PlaylistSongsAdapter extends BaseAdapter {
+    private LayoutInflater inflater;
+    private MusicPlayer player;
+    private SongPlayActivity context;
+
+    /**
+     * Basic constructor that sets up the inflater and instance variables.
+     * @param context In this case specifically a SingPlayActivity to be able to call updateSongView //TODO: could call invalidate and overwrite that in SongPlayActivity
+     * @param player takes in the Player instead of using global
+     */
+    public PlaylistSongsAdapter(SongPlayActivity context,MusicPlayer player){
+        this.player = player;
+        inflater = LayoutInflater.from(context);
+        this.context=context;
+    }
+
+    @Override
+    public boolean hasStableIds() {
+        return true;
+    }
+
+    @Override
+    public View getView(final int position, View view, ViewGroup viewGroup) {
+
+        if (view == null) {
+            view = inflater.inflate(R.layout.playlist_song, viewGroup,false);
+        }
+
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                player.setNowPlaying(position);
+                player.playCurrentSong();
+                notifyDataSetChanged();
+                context.updateSongView();
+            }
+        });
+        final MusicPlayer.PlaylistSong song=player.getPlaylist().get(position);
+        TextView textView = (TextView) view.findViewById(R.id.PlaylistSongName);
+        //"i" is the position of the parent/group in the list
+        textView.setText(song.song.getName());
+
+        textView = (TextView) view.findViewById(R.id.PlaylistSongArtist);
+        //"i" is the position of the parent/group in the list
+        textView.setText(song.artist.getName());
+
+        if(!song.song.isLocal() && !MusicApplication.isConnectedToWifi()){
+            view.setEnabled(false);
+        }
+        ImageButton topButton=(ImageButton)view.findViewById(R.id.PlaylistTopButton);
+        if(position==player.getPlayIndex()){
+            topButton.setVisibility(ImageButton.INVISIBLE);
+            topButton.setEnabled(false);
+            view.setBackgroundColor(Color.BLUE);
+        } else{
+            view.setBackgroundColor(Color.TRANSPARENT);
+            topButton.setEnabled(true);
+            topButton.setVisibility(ImageButton.VISIBLE);
+        }
+        if(position<player.getPlayIndex()){
+            topButton.setImageResource(android.R.drawable.arrow_down_float);
+        }
+        if(position>player.getPlayIndex()){
+            topButton.setImageResource(android.R.drawable.arrow_up_float);
+        }
+        topButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                player.moveToNext(position);
+                notifyDataSetChanged();
+            }
+        });
+
+        ImageButton trash=(ImageButton)view.findViewById(R.id.PlaylistTrashButton);
+        trash.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int playing=player.getPlayIndex();
+                player.remove(position);
+                if(playing==position)
+                    context.updateSongView();
+                notifyDataSetChanged();
+            }
+        });
+
+
+
+        //return the entire view
+        return view;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return position;
+    }
+
+    @Override
+    public int getViewTypeCount() {
+        return 1;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return !player.hasSongs();
+    }
+
+    @Override
+    public int getCount() {
+        return player.getPlaylist().size();
+    }
+
+    @Override
+    public Object getItem(int position) {
+        return player.getPlaylist().get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return player.getPlaylist().get(position).song.getName().hashCode();
+    }
+
+    @Override
+    public boolean areAllItemsEnabled() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled(int position) {
+        return true;
+    }
+
+
+}

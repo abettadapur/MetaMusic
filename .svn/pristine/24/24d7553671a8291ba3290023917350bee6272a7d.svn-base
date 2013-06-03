@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:id="@+id/listAlbumSongTextView"
+              android:padding="10dp"
+              android:layout_gravity="left" android:layout_weight="1"
+              style="@android:style/TextAppearance.DeviceDefault.Medium"/>
+
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:id="@+id/songAdd" android:layout_gravity="center_vertical|right"
+            style="@android:style/MediaButton" android:src="@android:drawable/ic_menu_add" android:adjustViewBounds="true"
+            android:layout_weight="1" android:longClickable="false" android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true" android:layout_alignParentRight="false"
+            android:layout_marginRight="66dp"/>
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/songPlay" android:layout_gravity="center_vertical|right" style="@android:style/MediaButton.Play"
+            android:src="@android:drawable/ic_media_play" android:visibility="visible" android:layout_weight="1"
+            android:layout_marginRight="14dp" android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true" android:layout_centerVertical="true"/>
+
+</RelativeLayout>

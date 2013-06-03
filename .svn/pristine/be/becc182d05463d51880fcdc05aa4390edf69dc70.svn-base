@@ -1,0 +1,30 @@
+<PreferenceScreen
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+            android:title="Graph Preferences"/>
+
+    <EditTextPreference
+            android:key="prefPieRatio"
+            android:title="Set Pie Chart Minimum Song per Genre"
+            android:summary="This limits crowding of the genre pie chart by grouping genres with almost no songs into Other. It works by requiring each genre must have at least this many songs."
+            android:text="6"
+            android:inputType="number"
+            android:dialogTitle="Pie Chart Ratio" />
+
+    <EditTextPreference
+            android:key="prefNumMost"
+            android:title="Set Most Played Songs Count"
+            android:summary="The line graph is set to display this amount of the maximum played songs."
+            android:text="20"
+            android:inputType="number"
+            android:dialogTitle="Amount of max played" />
+
+    <CheckBoxPreference
+            android:key="prefShowLegend"
+            android:title="Set show legend"
+            android:summary="Configure setting the legend of the legend"
+         />
+
+
+
+</PreferenceScreen>

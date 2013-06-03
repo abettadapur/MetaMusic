@@ -1,0 +1,341 @@
+package org.thingswithworth.metamusic.model;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.preference.PreferenceManager;
+import android.util.DisplayMetrics;
+import android.view.View;
+import com.android.gm.api.model.Song;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.activities.GenreDetailActivity;
+import org.achartengine.ChartFactory;
+import org.achartengine.GraphicalView;
+import org.achartengine.chart.BarChart;
+import org.achartengine.chart.PointStyle;
+import org.achartengine.model.CategorySeries;
+import org.achartengine.model.SeriesSelection;
+import org.achartengine.model.XYMultipleSeriesDataset;
+import org.achartengine.model.XYSeries;
+import org.achartengine.renderer.DefaultRenderer;
+import org.achartengine.renderer.SimpleSeriesRenderer;
+import org.achartengine.renderer.XYMultipleSeriesRenderer;
+import org.achartengine.renderer.XYSeriesRenderer;
+
+import java.util.*;
+
+/**
+ * Monostate class with methods to generate the graphs using the global music infomation.
+ * @author Andrey Kurenkov, Alexander Ikonomidis
+ */
+public class ChartGenerator {
+
+
+    /**
+     * Used to create the genre pie chart shown on the main screen.
+     * @param context context needed to create the graph
+     * @return The GraphicalView of the chart
+     */
+    public static GraphicalView getPieChart(final Context context)
+    {
+        SharedPreferences prefs= PreferenceManager.getDefaultSharedPreferences(context);
+        HashMap<String, ArrayList<Song>> genres = MusicApplication.getGlobalCollection().getSongGenres();
+        genres.put("Other",new ArrayList<Song>());
+        int minSongs=30;
+        try{
+            minSongs=Integer.parseInt(prefs.getString("prefPieRatio","-1"));
+        }   catch(Exception e){}
+        if(minSongs<=0)
+            minSongs=MusicApplication.getGlobalCollection().getMaxInGenre()/40;
+        int sum = 0, g =0, numElements = 1;
+        String[] code = new String[genres.keySet().size()+1];
+        code[genres.keySet().size()]="Other";
+        double[] distribution = new double[genres.keySet().size()+1];
+        int[] colors = new int[genres.keySet().size()+1];
+        colors[0] = 0xFF000000 | (int)(Math.random() * 0x00FFFFFF);
+        for (String k: genres.keySet()){
+            if(!k.equals("Other")){
+                int genreCount=genres.get(k).size();
+                sum+=genreCount;
+                if (genreCount>=minSongs){
+                    distribution[g] = genreCount;
+                    colors[g] = 0xFF000000 | (int)(Math.random() * 0x00FFFFFF);
+                    code[g++] = k;
+                    numElements++;
+                } else{
+                    distribution[genres.keySet().size()]+=genreCount;
+                    genres.get("Other").addAll(genres.get(k));
+                }
+            }
+        }
+        if(distribution[genres.keySet().size()]==0)
+            numElements--;
+        g = 0;
+        CategorySeries distributionSeries = new CategorySeries("Pie Chart");
+        DefaultRenderer renderer = new DefaultRenderer();
+        for (int i = 0; i<numElements; i++){
+            distribution[g++]/=(1.0*sum);
+        }
+
+        {
+            String[] temp = new String[numElements];
+            System.arraycopy(code, 0, temp, 0, numElements);
+            code = temp;
+        }
+        {
+            double[] temp = new double[numElements];
+            System.arraycopy(distribution, 0, temp, 0, numElements);
+            distribution = temp;
+        }
+        ArrayList<Integer> randomInts=new ArrayList<Integer>(numElements);
+        //dont do "Other" if none added
+        for(int i=0; i<numElements; i++)
+        {
+           randomInts.add(i);
+        }
+        final String[] randomizedCode=new String[code.length];
+        for(int i=0; i<numElements; i++)
+        {
+            int at=randomInts.remove((int)(randomInts.size()*Math.random()));
+            distributionSeries.add(code[at], distribution[at]);
+            randomizedCode[i]=code[at];
+            SimpleSeriesRenderer seriesRenderer = new SimpleSeriesRenderer();
+            seriesRenderer.setColor(colors[at]);
+            seriesRenderer.setDisplayChartValues(true);
+            renderer.addSeriesRenderer(seriesRenderer);
+        }
+        boolean showLegend=prefs.getBoolean("prefShowLegend",false);
+        renderer.setShowLegend(showLegend);
+        boolean showTitle=prefs.getBoolean("prefShowTitle",false);
+        if(showTitle)
+            renderer.setChartTitle("Music Collection Genre Distribution");
+        DisplayMetrics metrics = new DisplayMetrics();
+        ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        double ratio = 1.0*metrics.widthPixels/metrics.heightPixels;
+
+        renderer.setChartTitleTextSize((int)(40*ratio));
+        renderer.setZoomButtonsVisible(true);
+
+        final GraphicalView mChart= ChartFactory.getPieChartView(context, distributionSeries, renderer);
+
+        renderer.setClickEnabled(true);
+        renderer.setClickEnabled(true);//
+        renderer.setSelectableBuffer(10);
+        renderer.setLabelsTextSize(15);
+        renderer.setZoomButtonsVisible(false);
+        mChart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                SeriesSelection seriesSelection = mChart.getCurrentSeriesAndPoint();
+                if (seriesSelection != null) {
+
+                    // Getting the name of the clicked slice
+                    int seriesIndex = seriesSelection.getPointIndex();
+                    String selectedSeries= randomizedCode[seriesIndex];
+
+                    // Getting the value of the clicked slice
+                    Intent i = new Intent(context, GenreDetailActivity.class);
+                    i.putExtra("Genre",selectedSeries);
+                    context.startActivity(i);
+                }
+            }
+        });
+        return mChart;
+
+    }
+
+    public static GraphicalView getBarChart(Context context, boolean graphMostPlayed)
+    {
+        SharedPreferences prefs= PreferenceManager.getDefaultSharedPreferences(context);
+        int mostSongs=20;
+        try{
+            mostSongs=      Integer.parseInt(prefs.getString("prefNumMost","20"));
+        }   catch(Exception e){}
+        if(mostSongs<=0)
+            mostSongs=6;
+        if(graphMostPlayed){
+
+            ArrayList<Song>  songs=MusicApplication.getGlobalCollection().getSongs();
+
+            PriorityQueue<Song> queue=new PriorityQueue<Song>(songs.size(), new Comparator<Song>()
+            {
+                public int compare(Song song, Song song2){
+                    return song2.getPlayCount()-song.getPlayCount();
+                }
+            });
+            for(Song s:songs){
+                queue.add(s);
+            }
+            XYSeries[] songBars= new XYSeries[mostSongs];
+            int max=queue.peek().getPlayCount();
+            for(int i=0;i<mostSongs;i++) {
+                Song next=queue.poll();
+                songBars[i] =new XYSeries(next.getTitle());
+                songBars[i].add(i,next.getPlayCount());
+            }
+
+            // Creating a dataset to hold each series
+            XYMultipleSeriesDataset dataset = new XYMultipleSeriesDataset();
+            for (XYSeries s: songBars)
+                dataset.addSeries(s);
+
+            XYSeriesRenderer[] renderers = new XYSeriesRenderer[songBars.length];
+            // Creating XYSeriesRenderer to customize genreSeries
+            for (int g=0;g<songBars.length;g++){
+                XYSeriesRenderer renderer = new XYSeriesRenderer();
+                renderer.setColor(0xFF000000 | (int)(Math.random() * 0x00FFFFFF));
+                renderer.setFillPoints(true);
+                renderer.setLineWidth(20);
+                renderer.setDisplayChartValues(true);
+                renderers[g] = renderer;
+            }
+
+            // Creating a XYMultipleSeriesRenderer to customize the whole chart
+            XYMultipleSeriesRenderer multiRenderer = new XYMultipleSeriesRenderer();
+            multiRenderer.setXLabels(0);
+            multiRenderer.setXTitle("Song");
+            multiRenderer.setYTitle("Number of Plays");
+            //multiRenderer.setZoomButtonsVisible(true);
+
+            for (int g = 0; g<renderers.length; g++){
+                multiRenderer.addSeriesRenderer(renderers[g]);
+            }
+            multiRenderer.setYAxisMin(0);
+            multiRenderer.setYAxisMax(max+10);
+
+            boolean showTitle=prefs.getBoolean("prefShowTitle",false);
+            if(showTitle)
+                multiRenderer.setChartTitle("Most Common Genres");
+            multiRenderer.setChartTitleTextSize(30);
+
+            return ChartFactory.getBarChartView(context, dataset, multiRenderer, BarChart.Type.DEFAULT);
+        }
+        HashMap<String, ArrayList<Song>> genreCounts = MusicApplication.getGlobalCollection().getSongGenres();
+        PriorityQueue<Map.Entry<String,ArrayList<Song>>> queue=new PriorityQueue<Map.Entry<String,ArrayList<Song>>>(genreCounts.size(), new Comparator<Map.Entry<String,ArrayList<Song>>>()
+        {
+            public int compare(Map.Entry<String,ArrayList<Song>> genre, Map.Entry<String,ArrayList<Song>> genre2){
+                return genre2.getValue().size()-genre.getValue().size();
+            }
+        });
+        for(Map.Entry<String,ArrayList<Song>> genre:genreCounts.entrySet()){
+            queue.add(genre);
+        }
+        int mostGenres=Math.min(15,genreCounts.size());
+        try{
+            mostGenres=      Math.min(genreCounts.size(),Integer.parseInt(prefs.getString("prefNumMostGenres","15")));
+        }   catch(Exception e){}
+        int max=queue.peek().getValue().size();
+        int at=0;
+        XYSeries[] genreBars = new XYSeries[mostGenres];
+        for(int i=0;i<mostGenres;i++) {
+            Map.Entry<String,ArrayList<Song>> entry= queue.poll();
+            String name=entry.getKey();
+            XYSeries series = new XYSeries(name);
+            series.add(at, entry.getValue().size());
+            series.setTitle(entry.getKey());
+            genreBars[at++] = series;
+        }
+        at=0;
+
+        // Creating a dataset to hold each series
+        XYMultipleSeriesDataset dataset = new XYMultipleSeriesDataset();
+        // Adding Income Series to the dataset
+        for (XYSeries s: genreBars)
+            dataset.addSeries(s);
+
+        XYSeriesRenderer[] renderers = new XYSeriesRenderer[genreBars.length];
+        // Creating XYSeriesRenderer to customize genreSeries
+       for(int i=0;i<mostGenres;i++){
+            XYSeriesRenderer renderer = new XYSeriesRenderer();
+            renderer.setColor(0xFF000000 | (int)(Math.random() * 0x00FFFFFF));
+            renderer.setFillPoints(true);
+            renderer.setLineWidth(20);
+            renderer.setDisplayChartValues(true);
+            renderers[at++] = renderer;
+        }
+
+        // Creating a XYMultipleSeriesRenderer to customize the whole chart
+        XYMultipleSeriesRenderer multiRenderer = new XYMultipleSeriesRenderer();
+        multiRenderer.setXLabels(0);
+        multiRenderer.setXTitle("Genre");
+        multiRenderer.setYTitle("Number of Songs");
+        //multiRenderer.setZoomButtonsVisible(true);
+
+
+        for (at = 0; at<renderers.length; at++){
+            multiRenderer.addSeriesRenderer(renderers[at]);
+        }
+        multiRenderer.setYAxisMin(0);
+        multiRenderer.setYAxisMax(max+10);
+
+        boolean showTitle=prefs.getBoolean("prefShowTitle",false);
+        if(showTitle)
+            multiRenderer.setChartTitle("Most Played Songs");
+        multiRenderer.setChartTitleTextSize(30);
+
+        return ChartFactory.getBarChartView(context, dataset, multiRenderer, BarChart.Type.DEFAULT);
+    }
+
+    public static GraphicalView getYearLineChart(Context context){
+        SharedPreferences prefs= PreferenceManager.getDefaultSharedPreferences(context);
+        ArrayList<Song> songs=MusicApplication.getGlobalCollection().getSongs();
+        int minYear= Integer.MAX_VALUE;
+        int maxYear= Integer.MIN_VALUE;
+        HashMap<Integer,Integer> years=new HashMap<Integer,Integer>();
+        for(Song song:songs){
+            Integer year=song.getYear();
+            if(year>0) {
+                int currentYear=Calendar.getInstance().get(Calendar.YEAR);
+                if(year<minYear && year>1600)
+                    minYear=year;
+                if(year>maxYear && year<=currentYear)
+                    maxYear=year;
+                if(!years.containsKey(year))
+                    years.put(year,1);
+                else
+                    years.put(year,years.get(year)+1);
+            }
+        }
+
+        XYSeries yearSeries = new XYSeries("Number of songs per year");
+        int maxInYear=0;
+        for(int year=minYear;year<=maxYear;year++){
+            if(years.containsKey(year)){
+                int count=years.get(year);
+                yearSeries.add(year, count);
+                if(maxInYear<count)
+                    maxInYear=count;
+            }else{
+                yearSeries.add(year, 0);
+            }
+        }
+        XYSeriesRenderer renderer=new XYSeriesRenderer();
+
+        renderer.setPointStyle(PointStyle.POINT);
+        renderer.setColor(Color.argb(250, 0, 210, 250));
+
+        renderer.setChartValuesSpacing(0.2f);
+        renderer.setChartValuesTextSize(30);
+        renderer.setLineWidth(5);
+        XYMultipleSeriesDataset dataset=new XYMultipleSeriesDataset();
+        dataset.addSeries(yearSeries);
+        XYMultipleSeriesRenderer multiRenderer=new XYMultipleSeriesRenderer();
+        multiRenderer.addSeriesRenderer(renderer);
+        multiRenderer.setYLabels(20);
+        multiRenderer.setXLabels((maxYear - minYear) / 5);
+        multiRenderer.setXTitle("Year");
+        multiRenderer.setYTitle("Number of Songs");
+        boolean showTitle=prefs.getBoolean("prefShowTitle",false);
+        if(showTitle)
+            multiRenderer.setChartTitle("Song Counts per Year");
+        multiRenderer.setChartTitleTextSize(30);
+        boolean showLegend=prefs.getBoolean("prefShowLegend",false);
+        multiRenderer.setShowLegend(showLegend);
+        return ChartFactory.getLineChartView(context, dataset, multiRenderer);
+
+    }
+}

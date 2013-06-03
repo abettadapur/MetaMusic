@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              style="@style/ActivityTheme">
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/artistName" android:layout_gravity="center_horizontal|center_vertical"
+            style="@android:style/TextAppearance.DeviceDefault.Large"/>
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageLayout">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView" android:layout_gravity="center_horizontal|center_vertical"/>
+     </LinearLayout>
+
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/defaulttext"
+            android:id="@+id/bioView" android:layout_gravity="left|center_vertical"
+            android:focusable="true" android:focusableInTouchMode="true"
+            style="@android:style/TextAppearance.Holo.Medium"/>
+
+    <ExpandableListView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:id="@+id/artistAlbumList"
+            android:layout_gravity="left|top"
+            android:transcriptMode="disabled"
+            android:cacheColorHint="#00000000"
+            android:verticalScrollbarPosition="right"
+            android:listSelector="@android:color/transparent" android:scrollingCache="false"
+            android:smoothScrollbar="false" android:headerDividersEnabled="false"
+            android:divider="@color/defaulttext" android:drawSelectorOnTop="false" android:clickable="false"
+            android:fastScrollAlwaysVisible="false" android:longClickable="false" android:visibility="visible"
+            android:stackFromBottom="false"/>
+</LinearLayout>

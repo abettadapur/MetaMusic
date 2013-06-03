@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/listAlbumTextView"
+            android:padding="10dp"
+            android:layout_marginLeft="35dp" style="@android:style/TextAppearance.DeviceDefault.Medium"
+            android:text="Text"/>
+
+    <ImageView
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:id="@+id/albumImageView" android:layout_gravity="center_horizontal|left"
+            android:layout_alignParentEnd="true" android:layout_centerVertical="true"/>
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/albumPlay" android:layout_gravity="center_vertical|right" style="@android:style/MediaButton.Play"
+            android:src="@android:drawable/ic_media_play" android:visibility="visible"
+            android:layout_marginLeft="20dp" android:layout_marginRight="63dp" android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true" android:layout_centerVertical="true"
+            android:layout_alignParentStart="false"/>
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:id="@+id/albumAdd" android:layout_gravity="center_vertical|right"
+            style="@android:style/MediaButton" android:src="@android:drawable/ic_menu_add" android:adjustViewBounds="true"
+            android:longClickable="false" android:layout_alignParentEnd="false"
+            android:layout_centerVertical="true" android:layout_alignParentRight="false"
+            android:layout_toStartOf="@id/albumPlay"/>
+
+</RelativeLayout>

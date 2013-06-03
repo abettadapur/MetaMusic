@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/ateam.iml" filepath="$PROJECT_DIR$/ateam.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gen/edu/gatech/gatech.iml" filepath="$PROJECT_DIR$/gen/edu/gatech/gatech.iml" />
+    </modules>
+  </component>
+</project>
+

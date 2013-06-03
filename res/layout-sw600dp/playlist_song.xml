@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android"
+        android:clickable="false">
+
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/PlaylistTrashButton" android:layout_gravity="center_horizontal|bottom" style="@android:style/MediaButton"
+            android:src="@android:drawable/ic_notification_clear_all"
+            android:layout_alignParentRight="false" android:focusableInTouchMode="false"
+            android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"/>
+    <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:id="@+id/PlaylistTopButton" style="@android:style/MediaButton"
+            android:src="@android:drawable/arrow_up_float"
+            android:layout_alignParentRight="false" android:focusableInTouchMode="false"
+            android:layout_alignParentStart="true" android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp" android:layout_marginRight="10dp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Text"
+            android:id="@+id/PlaylistSongName" android:layout_gravity="center|left"
+            style="@android:style/TextAppearance.DeviceDefault" android:layout_alignParentStart="false"
+            android:layout_toEndOf="@id/PlaylistTopButton" android:layout_centerVertical="true"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="New Text"
+            android:id="@+id/PlaylistSongArtist"
+            android:layout_toStartOf="@id/PlaylistTrashButton" android:layout_centerVertical="true"/>
+
+</RelativeLayout>

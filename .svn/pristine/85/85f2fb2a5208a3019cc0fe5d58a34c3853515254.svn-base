@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:measureWithLargestChild="true"
+            android:gravity="center_horizontal" android:id="@+id/playingImageBack">
+    <ImageView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView" android:layout_gravity="center_horizontal|top"/>
+
+     </LinearLayout>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:orientation="vertical"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content" android:layout_gravity="center"
+                  android:gravity="center_vertical|center_horizontal">
+        <TextView android:id="@+id/titleView" android:textSize="24dp" android:layout_height="wrap_content" android:layout_width="fill_parent"
+                  android:layout_gravity="center"
+                  android:singleLine="false" android:gravity="center" android:phoneNumber="true"
+                  android:textAlignment="center"/>
+        <TextView android:id="@+id/artistView" android:layout_height="wrap_content" android:layout_width="fill_parent"
+                  android:layout_gravity="center" android:gravity="center_vertical|center_horizontal"
+                  android:textAlignment="center"/>
+        <TextView android:id="@+id/albumView" android:layout_height="wrap_content" android:layout_width="fill_parent"
+                  android:layout_gravity="center" android:gravity="center_vertical|center_horizontal"
+                  android:textAlignment="center"/>
+
+    </LinearLayout>
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:measureWithLargestChild="true"
+            android:gravity="center_horizontal">
+        <ImageButton
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:id="@+id/playlistPrevious" android:layout_gravity="left" style="@android:style/MediaButton"
+                android:src="@android:drawable/ic_media_previous" android:scaleType="fitXY" android:onClick="playPrev"/>
+        <ImageButton
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:id="@+id/playlistPlayButton" android:layout_gravity="center"
+                style="@android:style/MediaButton.Play" android:visibility="visible"
+                android:src="@android:drawable/ic_media_play" android:scaleType="fitXY" android:focusable="false"
+                android:onClick="playPause"/>
+        <ImageButton
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:id="@+id/playlistNext" android:layout_gravity="center" style="@android:style/MediaButton"
+                android:src="@android:drawable/ic_media_next" android:adjustViewBounds="false"
+                android:cropToPadding="false" android:clickable="false"
+                android:layout_weight="0" android:scaleType="fitXY" android:onClick="playNext"/>
+    </LinearLayout>
+
+    <SeekBar android:id="@+id/musicProgress" android:layout_height="wrap_content" android:layout_gravity="bottom"  android:layout_width="fill_parent"
+                 android:indeterminate="false" style="@android:style/Widget.Holo.Light.SeekBar"/>
+    <ListView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/PlaylistView" android:layout_gravity="center"
+            android:scrollingCache="false"/>
+</LinearLayout>

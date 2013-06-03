@@ -1,0 +1,411 @@
+package org.thingswithworth.metamusic.media;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.widget.SeekBar;
+import android.widget.Toast;
+import com.android.gm.api.GoogleMusicApi;
+import com.android.gm.api.model.Song;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.activities.factories.DialogFactory;
+import org.thingswithworth.metamusic.model.Album;
+import org.thingswithworth.metamusic.model.Artist;
+import org.json.JSONException;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Class designed to make the playing of music easier. Only supports GMusic at this time
+ * @author Alex Bettadapur
+ */
+public class MusicPlayer implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, SeekBar.OnSeekBarChangeListener {
+    private ArrayList<PlaylistSong> playlist;
+    private int playIndex;
+    private static MusicPlayer player;
+    public MediaPlayer mediaPlayer;
+    private boolean isPrepared=false;
+    private AlertDialog dialog;
+    private Activity context;
+
+    private MusicPlayer()
+    {
+        playlist = new ArrayList<PlaylistSong>();
+        playlist = new ArrayList<PlaylistSong>();
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setOnCompletionListener(this);
+        mediaPlayer.setOnPreparedListener(this);
+    }
+
+    /**
+     * The MusicPlayer class is a singleton to allow music to be played across all areas of the application.
+     */
+    public static  MusicPlayer getPlayer()
+    {
+        if(player==null)
+            player = new MusicPlayer();
+        return player;
+    }
+
+    public static class PlaylistSong {
+        public Artist artist;
+        public Album album;
+        public Song song;
+
+        public PlaylistSong(Artist artist, Album album, Song song) {
+            this.artist = artist;
+            this.song = song;
+            this.album = album;
+        }
+
+        public String toString(){
+            return  song.toString();
+        }
+    }
+
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if(fromUser){
+            mediaPlayer.seekTo(progress);
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
+    /**
+     * Add a list of songs to the now playing queue. The songs will be added in order to the end of the queue
+     * @param songs The list of songs to add
+     * @param at boolean whether to add first or last
+     */
+    public void queueSongs(List<PlaylistSong> songs, int at)
+    {
+        int count=0;
+        for(PlaylistSong s: songs){
+            playlist.add(at+count++,s);
+        }
+    }
+
+    /**
+     * Add a single song to the end of the now playing queue.
+     * @param s The song to add
+     * @param at boolean whether to add first or last
+     */
+    public void queueSong(PlaylistSong s, int at)
+    {
+        playlist.add(at,s);
+    }
+
+
+    /**
+     * Add a list of songs to the now playing queue. The songs will be added in order to the end of the queue
+     * @param songs The list of songs to add
+     * @param first boolean whether to add first or last
+     */
+    public void queueSongs(List<PlaylistSong> songs, boolean first)
+    {
+        int count=0;
+        for(PlaylistSong s: songs){
+            if(first)
+                playlist.add(count++,s);
+            else
+                playlist.add(s);
+        }
+    }
+
+    /**
+     * Add a single song to the end of the now playing queue.
+     * @param s The song to add
+     * @param first boolean whether to add first or last
+     */
+    public void queueSong(PlaylistSong s, boolean first)
+    {
+        if(first)
+            playlist.add(0,s);
+        else
+            playlist.add(s);
+    }
+
+    public void moveSong(int from, int to){
+        PlaylistSong song=playlist.remove(from);
+        playlist.add(to,song);
+        if(from<playIndex && to>playIndex)
+            playIndex--;
+        if(from>playIndex && to<=playIndex)
+            playIndex++;
+    }
+
+    public void moveToNext(int move){
+        if(move>0 && move< playlist.size()){
+            moveSong(move,playIndex+1);
+        }
+    }
+
+    public int getPlayIndex(){
+        return playIndex;
+    }
+
+    /**
+     * Set the now playing index in the the now playing playlist
+     * @param i The index to set
+     */
+    public void setNowPlaying(int i)
+    {
+        playIndex=i;
+    }
+
+    public boolean playCurrentSong(){
+        if(playlist.size()>0){
+            Song toPlay=playlist.get(playIndex).song;
+
+            if(!toPlay.isLocal() && !MusicApplication.isConnectedToWifi())
+                playNext();
+            else
+                playSong(toPlay);
+        }
+        return playlist.size()>0;
+    }
+
+    /**
+     * Load a song
+     * @param song Song
+     */
+    private void playSong(Song song)
+    {
+        mediaPlayer.reset();
+        if(!song.isLocal()){
+            new GetStreamTask().execute(song);
+            if(context!=null){
+                dialog = DialogFactory.getProgressDialog("Loading", "Loading Song", context, false);
+                dialog.setCanceledOnTouchOutside(false);
+                dialog.show();
+            }
+        }
+        else{
+            playLocalSong(song);
+        }
+    }
+
+    /**
+     * Plays a local song. Note, based on documentation (http://developer.android.com/reference/android/media/MediaPlayer.html)
+     * prepare() is called here and finishes synchronously and prepareAsync should be called for streams.
+     * @param song Song
+     */
+    private void playLocalSong(Song song){
+
+        try{
+
+            mediaPlayer.setDataSource(song.getUrl());
+            mediaPlayer.prepare();
+            this.onPrepared(mediaPlayer);
+        }catch(Exception e){
+            Log.e("MusicPlayer Error: ","Problem: "+e.toString());
+        }
+    }
+    /**
+     * Clears the now playing queue and stops any currently playing music
+     */
+    public void clearSongs()
+    {
+        playlist.clear();
+        mediaPlayer.release();
+        mediaPlayer =new MediaPlayer();
+        isPrepared=false;
+    }
+
+    public boolean isPlaying(){
+        return mediaPlayer.isPlaying();
+    }
+
+    public boolean hasSongs(){
+        return !playlist.isEmpty();
+    }
+
+    /**
+     * Gets the currently playing track
+     * @return The currently playing song
+     */
+    public PlaylistSong getNowPlaying()
+    {
+        if(playlist.size()==0)
+            return null;
+        return playlist.get(playIndex);
+    }
+
+    /**
+     * Gets the now playing list
+     * @return The now playing list
+     */
+    public ArrayList<PlaylistSong> getPlaylist()
+    {
+        return playlist;
+    }
+
+
+    @Override
+    public void onCompletion(MediaPlayer mediaPlayer)
+    {
+        playNext();
+    }
+
+    public boolean playNext(){
+        if(playIndex+1<playlist.size()){
+            playIndex++;
+            Song s = playlist.get(playIndex).song;
+            isPrepared=false;
+            playSong(s);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean playPrev(){
+        if(playIndex>0){
+            playIndex--;
+            Song s = playlist.get(playIndex).song;
+            isPrepared=false;
+            playSong(s);
+            return true;
+        }
+        return false;
+    }
+
+    public void play() {
+        if(isPrepared)
+            mediaPlayer.start();
+        else
+            playCurrentSong();
+    }
+
+    public void remove(int num){
+        playlist.remove(num);
+        if(num<playIndex)
+            playIndex--;
+        if(playIndex==num){
+            if(isPlaying() && hasSongs())
+                playCurrentSong();
+            else
+                isPrepared=false;
+        }
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mediaPlayer)
+    {
+        isPrepared=true;
+        this.mediaPlayer.start();
+        if(dialog!=null)
+            dialog.hide();
+    }
+
+    private class GetStreamTask extends AsyncTask<Song, Void, URI>
+    {
+        @Override
+        protected URI doInBackground(Song... songs)
+        {
+            URI uri = null;
+            try
+            {
+                uri= GoogleMusicApi.getSongStream(songs[0]);
+            }
+            catch(JSONException jsex)
+            {
+                Log.e("JSON", "JSON Error");
+            }
+            catch(URISyntaxException usex)
+            {
+                Log.e("URI","URI ERROR");
+            }
+            catch(Exception ex)
+            {
+                Log.e("EXCEPTION",ex.getMessage());
+            }
+            return uri;
+        }
+        protected void onPostExecute(URI uri)
+        {
+            openStream(uri);
+        }
+
+    }
+
+    /**
+     * Opens the music stream for the player
+     * @param uri The uri to open
+     */
+    private void openStream(URI uri)
+    {
+        try
+        {
+            Uri androidUri = Uri.parse(uri.toString());
+            mediaPlayer.setDataSource(MusicApplication.getAppContext(), androidUri);
+            mediaPlayer.prepareAsync();
+        }
+        catch(IOException ioex)
+        {
+            Toast.makeText(MusicApplication.getAppContext(),"Uknown error with loading song.",Toast.LENGTH_LONG).show();
+            Log.e("MusicPlayer","MusicPlayer excpetion on OpenStream");
+        }
+        catch(IllegalStateException e){
+        }
+    }
+
+    /**
+     * Pauses or resumes the currently playing track
+     */
+    public void pause()
+    {
+        if(mediaPlayer.isPlaying())
+        {
+            mediaPlayer.pause();
+        }
+    }
+
+    /**
+     * Gets the total duration of the currently playing track
+     * @return duration
+     */
+    public int getDuration()
+    {
+        if(isPrepared)
+            return mediaPlayer.getDuration();
+        return 0;
+    }
+
+    /**
+     * Gets the current progress in playing of the track
+     * @return duration
+     */
+    public int getCurrentPosition()
+    {
+        if(isPrepared)
+            return mediaPlayer.getCurrentPosition();
+        return 0;
+    }
+
+    public void cleanup(){
+        mediaPlayer.reset();
+        mediaPlayer.release();
+    }
+
+    public Activity getContext() {
+        return context;
+    }
+
+    public void setContext(Activity context) {
+        this.context = context;
+    }
+}

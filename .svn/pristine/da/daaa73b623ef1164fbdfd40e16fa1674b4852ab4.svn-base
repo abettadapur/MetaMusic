@@ -1,0 +1,69 @@
+package org.thingswithworth.metamusic.activities;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import com.android.gm.api.model.Song;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.R;
+import org.thingswithworth.metamusic.media.MusicPlayer;
+import org.thingswithworth.metamusic.model.Album;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Alex
+ * Date: 4/20/13
+ * Time: 6:25 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SongListActivity extends AppActivity implements AdapterView.OnItemClickListener
+{
+    ListView view;
+    String artist;
+    String albumName;
+    List<MusicPlayer.PlaylistSong> songs;
+    public void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.genre_detail_activity);
+        view = (ListView)findViewById(R.id.listView);
+        view.setOnItemClickListener(this);
+        view.setClickable(false);
+        artist = getIntent().getStringExtra("artist");
+        albumName = getIntent().getStringExtra("album");
+        populateList();
+
+    }
+    private void populateList()
+    {
+        Album album = MusicApplication.getGlobalCollection().getAlbum(artist,albumName);
+        songs=new ArrayList<MusicPlayer.PlaylistSong>();
+        for(Song song:album.getSongs()){
+             songs.add(new MusicPlayer.PlaylistSong(album.getArtist(),album,song));
+        }
+        Song[] songarr = Arrays.copyOf(songs.toArray(), songs.size(), Song[].class);
+
+        ArrayAdapter<Song> adapter = new ArrayAdapter<Song>(this, android.R.layout.simple_list_item_1, songarr);
+        adapter.notifyDataSetChanged();
+        view.setAdapter(adapter);
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l)
+    {
+        Song song = (Song)adapterView.getItemAtPosition(i);
+
+        MusicPlayer.getPlayer().clearSongs();
+        MusicPlayer.getPlayer().queueSongs(songs,true);
+        MusicPlayer.getPlayer().setNowPlaying(i);
+        Intent intent = new Intent(this, SongPlayActivity.class);
+        startActivity(intent);
+    }
+}

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout    xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:orientation="horizontal"
+        android:weightSum="1.0">
+
+
+    <ImageButton
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:id="@+id/PlaylistTopButton" style="@android:style/MediaButton"
+            android:src="@android:drawable/arrow_up_float"
+            android:layout_gravity="left|center_vertical"
+            android:layout_weight="0.1"
+            />
+    <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="New Text"
+            android:id="@+id/PlaylistSongName"
+            android:layout_gravity="left|center_vertical"
+            android:layout_weight="0.4"
+            style="@android:style/TextAppearance.DeviceDefault"
+            />
+    <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="New Text"
+            android:id="@+id/PlaylistSongArtist"
+            android:layout_weight="0.4"
+            android:layout_gravity="right|center_vertical" android:gravity="right"/>
+    <ImageButton
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/PlaylistTrashButton"
+            style="@android:style/MediaButton"
+            android:src="@android:drawable/ic_notification_clear_all"
+            android:layout_weight="0.1"
+            android:layout_gravity="right|center_vertical"/>
+
+</LinearLayout>

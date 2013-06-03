@@ -1,0 +1,193 @@
+package org.thingswithworth.metamusic.activities;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.ExpandableListView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import org.thingswithworth.metamusic.Callback;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.R;
+import org.thingswithworth.metamusic.activities.adapters.AlbumListAdapter;
+import org.thingswithworth.metamusic.activities.factories.GradientBitmapMaker;
+import org.thingswithworth.metamusic.model.Album;
+import org.thingswithworth.metamusic.model.Artist;
+import org.thingswithworth.metamusic.net.LastFMQuery;
+import org.thingswithworth.metamusic.net.NetImageTask;
+
+/**
+ * @author: andrey
+ * //TODO: generate generic art for artists/album with no art or no wifi (probably)
+ */
+//TODO: error handling
+//TODO: add in spotify metadata
+public class ArtistActivity extends AppActivity {
+    private String artistName;
+    private Artist artist;
+    private LinearLayout imageLayout;
+    private ImageView image;
+    private TextView bioView;
+    private ExpandableListView albumList;
+    private DisplayMetrics dm;
+    private boolean portrait;
+    public void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        artistName = getIntent().getStringExtra("artist");
+        artist= MusicApplication.getGlobalCollection().getArtist(artistName);
+
+        setContentView(R.layout.artist_activity);
+        image = (ImageView)findViewById(R.id.imageView);
+        bioView = (TextView)findViewById(R.id.bioView);
+        bioView.setMovementMethod(new ScrollingMovementMethod());
+        albumList=(ExpandableListView)findViewById(R.id.artistAlbumList);
+        imageLayout=(LinearLayout)findViewById(R.id.imageLayout);
+
+        TextView name= (TextView)findViewById(R.id.artistName);
+        name.setText(artistName);
+
+        TextView header=new TextView(this);
+        header.setText("Albums");
+        header.setGravity(Gravity.CENTER);
+        header.setTextSize(TypedValue.COMPLEX_UNIT_DIP,30);
+        albumList.setHeaderDividersEnabled(true);
+        albumList.addHeaderView(header);
+
+        //sets the adapter that provides data to the list.
+        albumList.setAdapter(new AlbumListAdapter(this,artist.getAlbums()));
+
+        int orientation=getResources().getConfiguration().orientation;
+        portrait=orientation== Configuration.ORIENTATION_PORTRAIT;
+    }
+
+    public void onStart()
+    {
+        super.onStart();
+        if(artist.getSummary()==null || artist.getImgLarge()==null)
+            loadArtist();
+        else
+            populateView();
+    }
+
+    private void loadArtist()
+    {
+        new LoadArtistTask().execute(artistName);
+    }
+
+    private void drawAlbums()
+    {
+        for(final Album album:artist.getAlbums()){
+            if(album.getCachedBitmapLarge()==null){
+                Callback.ParamCallback<Bitmap> callback=new Callback.ParamCallback<Bitmap>() {
+                    @Override
+                    public void onCompletion(Bitmap... param) {
+                        album.setCachedBitmapLarge(param[0]);
+                    }
+                };
+                new NetImageTask(callback).execute(album.getImgLarge());
+            }
+        }
+        albumList.invalidate();
+    }
+
+    private void populateView()
+    {
+        String summary=artist.getSummary();
+        if(summary!=null){
+            bioView.setText(summary);
+            if(artist.getCachedBitmapLarge()==null){
+                Callback.ParamCallback<Bitmap> callback=new Callback.ParamCallback<Bitmap>() {
+                    @Override
+                    public void onCompletion(Bitmap... param) {
+                        artist.setCachedBitmapLarge(param[0]);
+                        drawArtistBitmap();
+                    }
+                };
+                new NetImageTask(callback).execute(artist.getImgLarge());
+            }
+            else
+                drawArtistBitmap();
+
+        }else if(!MusicApplication.isConnectedToWifi()){
+            bioView.setText("No internet connection - unable to retrieve data.");
+            imageLayout.setBackground(new ColorDrawable(Color.BLACK));
+            image.setImageResource(R.drawable.nointernet);
+        }else{
+            bioView.setText("Unable to find information.");
+            imageLayout.setBackground(new ColorDrawable(Color.BLACK));
+            image.setImageDrawable(null);
+            image.setMinimumHeight(0);
+            image.setMinimumWidth(0);
+            image.setMaxHeight(0);
+            image.setMaxWidth(0);
+        }
+    }
+
+    public static void launchActivityFor(Context context,String artist) {
+        Intent intent = new Intent(context, ArtistActivity.class);
+        intent.putExtra("artist", artist);
+        context.startActivity(intent);
+    }
+
+    private class LoadArtistTask extends AsyncTask<String, Void, Artist>
+    {
+
+        @Override
+        protected Artist doInBackground(String... strings)
+        {
+            return LastFMQuery.getArtistMeta(artist);
+        }
+        protected void onPostExecute(Artist result)
+        {
+            populateView();
+        }
+    }
+
+    private class LoadAlbumsTask extends AsyncTask<Artist, Void, Artist>
+    {
+
+        @Override
+        protected Artist doInBackground(Artist... artist)
+        {
+            for(Album album:artist[0].getAlbums()){
+                if(album.getImgLarge()==null)
+                    LastFMQuery.getAlbumtMeta(album);
+            }
+            return null;
+        }
+        protected void onPostExecute(Artist result)
+        {
+            drawAlbums();
+        }
+    }
+
+    private void drawArtistBitmap(){
+        Bitmap bmp=artist.getCachedBitmapLarge();
+        Callback.ParamCallback<Bitmap> callback=new Callback.ParamCallback<Bitmap>() {
+            @Override
+            public void onCompletion(Bitmap... param) {
+                artist.setCachedBitmapLarge(param[0]);
+                artist.setCachecBitmapBackground(param[1]);
+            }
+        };
+        GradientBitmapMaker maker=new GradientBitmapMaker(callback,image, bmp, imageLayout, ArtistActivity.this);
+        maker.execute(bmp,artist.getCachecBitmapBackground());
+    }
+
+
+
+}

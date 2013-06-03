@@ -1,0 +1,231 @@
+package org.thingswithworth.metamusic.activities;
+
+import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.*;
+import org.thingswithworth.metamusic.Callback;
+import org.thingswithworth.metamusic.MusicApplication;
+import org.thingswithworth.metamusic.R;
+import org.thingswithworth.metamusic.activities.adapters.PlaylistSongsAdapter;
+import org.thingswithworth.metamusic.activities.factories.GradientBitmapMaker;
+import org.thingswithworth.metamusic.fileio.LocalImageTask;
+import org.thingswithworth.metamusic.media.MusicPlayer;
+import org.thingswithworth.metamusic.model.Album;
+import org.thingswithworth.metamusic.net.NetImageTask;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Alex
+ * Date: 4/20/13
+ * Time: 6:38 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class SongPlayActivity extends Activity implements View.OnClickListener {
+    private Timer timer;
+    private TextView titleView, albumView, artistView;
+    private SeekBar seekBar;
+    private MusicPlayer player;
+    private ImageButton prev,playPause,next;
+    private ListView songList;
+    private LinearLayout imageLayout;
+    private ImageView image;
+    private PlaylistSongsAdapter adapter;
+    private Notification nowPlaying;
+
+    public void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.song_play_activity);
+        image = (ImageView)findViewById(R.id.imageView);
+        imageLayout=(LinearLayout) findViewById(R.id.playingImageBack);
+        timer = new Timer();
+        timer.schedule(new ProgressTask(), 0l, 500l);
+        titleView=(TextView)findViewById(R.id.titleView);
+        albumView=(TextView)findViewById(R.id.albumView);
+        artistView=(TextView)findViewById(R.id.artistView);
+        seekBar = (SeekBar)findViewById(R.id.musicProgress);
+        playPause=((ImageButton)findViewById(R.id.playlistPlayButton));
+        player=MusicPlayer.getPlayer();
+        seekBar.setOnSeekBarChangeListener(player);
+
+        updateSongView();
+
+        songList=(ListView)     findViewById(R.id.PlaylistView);
+        ImageView emptyView=new ImageView(this);
+        emptyView.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+        songList.setEmptyView(emptyView);
+        adapter=new PlaylistSongsAdapter(this,player);
+
+        songList.setAdapter(adapter);
+        timer = new Timer();
+        timer.schedule(new ProgressTask(), 0l, 1000);
+        player.setContext(this);
+    }
+
+    public void onStop(){
+        super.onStop();
+        player.setContext(null);
+    }
+
+    public void updateSongView(){
+
+        seekBar.setMax(player.getDuration());
+        int currentPosition=player.getCurrentPosition();
+        seekBar.setProgress(currentPosition);
+
+        if(player.isPlaying()) {
+            playPause.setImageResource(android.R.drawable.ic_media_pause);
+        }
+        else{
+            playPause.setImageResource(android.R.drawable.ic_media_play);
+        }
+
+        MusicPlayer.PlaylistSong playing=player.getNowPlaying();
+        if(playing==null){
+            titleView.setText("No songs in queue");
+            artistView.setText("No artist");
+            albumView.setText("No album");
+            imageLayout.setBackground(null);
+            image.setImageDrawable(null);
+            image.setMinimumHeight(0);
+            image.setMinimumWidth(0);
+        } else if(!playing.song.getName().equals(titleView.getText().toString())){
+            titleView.setText(playing.song.getName());
+            artistView.setText(playing.artist.getName());
+            albumView.setText(playing.album.getName());
+            drawAlbumArt();
+
+            Intent intent = new Intent(MusicApplication.getAppContext(), SongPlayActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+            PendingIntent pendingIntent = PendingIntent.getActivity(MusicApplication.getAppContext(),0,intent,0);
+            nowPlaying = new Notification.Builder(MusicApplication.getAppContext())
+                    .setContentTitle(playing.song.getTitle())
+                    .setContentText(playing.song.getArtist())
+                    .setSmallIcon(android.R.drawable.ic_media_play)
+                    .setLargeIcon(playing.album.getCachedArt())
+                    .addAction(R.drawable.mmicon, "Go To Player", pendingIntent)
+                    .setOngoing(true)
+                    .build();
+            NotificationManager manager = (NotificationManager) MusicApplication.getAppContext().getSystemService(MusicApplication.getAppContext().NOTIFICATION_SERVICE);
+            manager.notify(0,nowPlaying);
+
+        }
+    }
+
+    private void drawAlbumArt(){
+        MusicPlayer.PlaylistSong playing=player.getNowPlaying();
+        Bitmap bitmap= playing.album.getCachedArt();
+
+        if(bitmap!=null){
+            drawAlbumBitmap(bitmap);
+        }   else{
+            String image = player.getNowPlaying().song.getAlbumArtUrl();
+            if(image!=null){
+                Callback.ParamCallback<Bitmap> call=new Callback.ParamCallback<Bitmap>() {
+
+                    @Override
+                    public void onCompletion(Bitmap... param) {
+                        drawAlbumBitmap(param[0]);
+                    }
+                };
+                if(playing.song.isLocal()){
+                    new LocalImageTask(call).execute(image);
+                }   else{
+                    image=image.replace("//","http://");
+                    try
+                    {
+                        URL url = new URL(image);
+                        new NetImageTask(call).execute(url);
+                    }
+                    catch(MalformedURLException muex)
+                    {
+                        Log.e(this.getClass().getName(),"Malformed URL");
+                    }
+                }
+            }
+        }
+    }
+
+    private void drawAlbumBitmap(Bitmap bmp){
+        final Album album=player.getNowPlaying().album;
+        if(!album.isFindingArt()){
+            Callback.ParamCallback<Bitmap> callback=new Callback.ParamCallback<Bitmap>() {
+                @Override
+                public void onCompletion(Bitmap... param) {
+                    album.setCachedArt(param[0]);
+                    album.setCachedArtBackground(param[1]);
+                    album.setFindingArt(false);
+                }
+            };
+            album.setFindingArt(true);
+            GradientBitmapMaker maker=new GradientBitmapMaker(callback,image, bmp, imageLayout, SongPlayActivity.this);
+            maker.execute(bmp, album.getCachedArtBackground());
+        }
+    }
+
+    public void playPause(View view)
+    {
+        if(player.isPlaying()) {
+            player.pause();
+            playPause.setImageResource(android.R.drawable.ic_media_play);
+        }
+        else if(player.hasSongs()){
+            player.play();
+            playPause.setImageResource(android.R.drawable.ic_media_pause);
+        }
+    }
+
+    public void playNext(View view){
+        boolean worked=player.playNext();
+        if(worked){
+            adapter.notifyDataSetChanged();
+            updateSongView();
+        }
+    }
+
+    public void playPrev(View view){
+        boolean worked=player.playPrev();
+        if(worked){
+            adapter.notifyDataSetChanged();
+            updateSongView();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    private  class ProgressTask extends TimerTask
+    {
+        @Override
+        public void run() {
+            SongPlayActivity.this.runOnUiThread(new Runnable() {
+
+                @Override
+                public void run()
+                {
+                    updateSongView();
+                }
+            });
+        }
+    };
+
+    public void onBackPressed()
+    {
+        timer.cancel();
+        this.finish();
+    }
+
+}

@@ -1,0 +1,50 @@
+package org.thingswithworth.metamusic.activities;
+
+import android.os.Bundle;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceFragment;
+import android.view.View;
+import android.widget.Button;
+import org.thingswithworth.metamusic.R;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: andrey
+ * Date: 4/20/13
+ * Time: 6:25 AM
+ * To change this template use File | Settings | File Templates.
+ */
+public class PreferencesActivity extends PreferenceActivity  {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        addPreferencesFromResource(R.xml.preferences);
+
+        setContentView(R.layout.prefs);
+        findViewById(R.id.propsDoneButton).setEnabled(true);
+        ((Button) findViewById(R.id.propsDoneButton)).setClickable(true);
+        ((Button) findViewById(R.id.propsDoneButton)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //TODO: so hacky
+                finish();
+            }
+        });
+    }
+
+
+
+
+    public static class PrefsFragment extends PreferenceFragment {
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+
+            // Load the preferences from an XML resource
+            addPreferencesFromResource(R.xml.preferences);
+        }
+    }
+}

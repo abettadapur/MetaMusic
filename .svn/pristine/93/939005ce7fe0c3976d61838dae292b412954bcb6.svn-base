@@ -1,0 +1,30 @@
+<PreferenceScreen
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+            android:title="Graph Preferences"/>
+
+    <EditTextPreference
+            android:key="prefPieRatio"
+            android:title="Change min genre ratio"
+            android:summary="The pie charts has a minimum quantity of max occurrences of genre divided by ratio to prevent crowding."
+            android:text="60"
+            android:inputType="number"
+            android:dialogTitle="Pie Chart Ratio" />
+
+    <EditTextPreference
+            android:key="prefNumMost"
+            android:title="Change most played song amount"
+            android:summary="The line graph is set to display this amount of the maximum played songs."
+            android:text="20"
+            android:inputType="number"
+            android:dialogTitle="Amount of max played" />
+
+    <CheckBoxPreference
+            android:key="prefShowLegend"
+            android:title="Set show legend"
+            android:summary="Configure setting the legend of the legend"
+         />
+
+
+
+</PreferenceScreen>

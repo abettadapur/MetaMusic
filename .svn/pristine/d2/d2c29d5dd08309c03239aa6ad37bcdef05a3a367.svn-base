@@ -1,0 +1,76 @@
+package org.thingswithworth.metamusic.activities.factories;
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import org.thingswithworth.metamusic.R;
+import org.thingswithworth.metamusic.activities.BrowseChartsActivity;
+import org.thingswithworth.metamusic.net.GoogleMusic;
+
+/**
+ * Created with IntelliJ IDEA.
+ * User: Alex
+ * Date: 4/19/13
+ * Time: 8:22 PM
+ * To change this template use File | Settings | File Templates.
+ */
+public class DialogFactory
+{
+    public static AlertDialog createIndeterminateProgressDialog(String title, String message, final BrowseChartsActivity caller)
+    {
+        AlertDialog.Builder aDB = new AlertDialog.Builder(caller);
+        aDB.setTitle(title);
+        final ProgressBar bar = new ProgressBar(caller);
+        bar.setIndeterminate(true);
+        aDB.setView(bar);
+        aDB.setMessage(message);
+        aDB.setNegativeButton("Cancel Operation", new DialogInterface.OnClickListener()
+        {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i)
+            {
+                GoogleMusic.stopQuery();
+            }
+        });
+
+        return aDB.create();
+    }
+
+    public static AlertDialog createResetDialog(final BrowseChartsActivity c)
+    {
+        final BrowseChartsActivity caller = c;
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(caller);
+        LayoutInflater li = LayoutInflater.from(c);
+        View promptsView = li.inflate(R.layout.gmusiclogin_activity, null);
+        final TextView emailView = (TextView)promptsView.findViewById(R.id.gMusicUser);
+        final TextView passwordView = (TextView)promptsView.findViewById(R.id.gMusicPassword);
+        alertDialogBuilder.setView(promptsView);
+        alertDialogBuilder.setTitle("Enter Email");
+        alertDialogBuilder.setPositiveButton("Ok",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                                        int which)
+                    {
+                         c.startQuery(emailView.getEditableText().toString(), passwordView.getEditableText().toString());
+                    }
+                });
+        alertDialogBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog,
+                                        int which) {
+
+                        dialog.dismiss();
+                    }
+                });
+        alertDialogBuilder.setMessage("Enter your google credentials");
+        alertDialogBuilder.setCancelable(true);
+        return alertDialogBuilder.create();
+    }
+
+
+}

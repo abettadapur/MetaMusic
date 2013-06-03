@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="libs">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/libs/android.gmusic.api.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libs/achartengine-1.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../android.gmusic.api/gen" />
+      <root url="file://$PROJECT_DIR$/../android.gmusic.api/src" />
+    </SOURCES>
+  </library>
+</component>

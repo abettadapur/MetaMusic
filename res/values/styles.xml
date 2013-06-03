@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppButton">
+        <item name="android:background">@drawable/shinybutton</item>
+        <item name="android:textColor">@color/defaulttext</item>
+        <item name="android:textSize">16dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="ActivityTheme" parent="android:Theme.Holo">
+        <item name="android:windowBackground">@color/windowback</item>
+    </style>
+</resources>
